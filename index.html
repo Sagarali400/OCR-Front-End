@@ -1,11 +1,584 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project Bangla OCR</title>
-  </head>
-  <body>
-    <h1>Project Bangla OCR</h1>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bangla Handwriting Image Collector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1a759f',
+            secondary: '#34a0a4',
+            accent: '#76c893',
+            dark: '#184e77'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1a759f, #34a0a4, #76c893);
+      min-height: 100vh;
+    }
+    
+    .upload-area {
+      border: 2px dashed #d1e7e8;
+      transition: all 0.3s ease;
+    }
+    
+    .upload-area:hover, .upload-area.dragover {
+      border-color: #76c893;
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .progress-bar {
+      height: 6px;
+      width: 0;
+      transition: width 0.5s ease;
+    }
+    
+    .slide-in {
+      animation: slideIn 0.5s forwards;
+    }
+    
+    .slide-out {
+      animation: slideOut 0.5s forwards;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes slideOut {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in forwards;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .bangla-text {
+      font-family: 'Noto Sans Bengali', Arial, sans-serif;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body class="py-8 px-4">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <header class="text-center mb-12">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-3">
+        <i class="fas fa-hands mr-2"></i>Bangla Handwriting Data Collector
+      </h1>
+      <p class="text-xl text-white/90 max-w-2xl mx-auto">
+        Help build our handwriting recognition dataset by submitting samples
+      </p>
+      
+      <div class="bangla-text text-2xl text-white mt-6">
+       আপনার  হাতের লেখা পাঠিয়ে আমাদের ডেটাসেট তৈরিতে সহায়তা করুন!
+      </div>
+      
+      <div class="w-full bg-white/30 rounded-full h-2.5 mt-6 max-w-md mx-auto">
+        <div id="progressBar" class="progress-bar bg-white rounded-full"></div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden">
+      <div class="p-1 bg-gradient-to-r from-primary to-accent"></div>
+      
+      <div class="p-6 md:p-8">
+        <!-- Step 1: User Info Form -->
+        <div id="step1" class="slide-in">
+          <div class="flex items-center mb-8">
+            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold mr-3">1</div>
+            <h2 class="text-2xl font-bold text-gray-800">Your Information</h2>
+          </div>
+          
+          <form id="infoForm" class="space-y-6">
+            <div>
+              <label class="block text-gray-700 font-medium mb-2" for="name">
+                Full Name
+              </label>
+              <div class="relative">
+                <input 
+                  type="text" 
+                  id="name" 
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition pl-12"
+                  placeholder="John Smith"
+                  required
+                >
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-user text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-gray-700 font-medium mb-2" for="age">
+                  Age
+                </label>
+                <div class="relative">
+                  <input 
+                    type="number" 
+                    id="age" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition pl-12"
+                    placeholder="25"
+                    min="1"
+                    max="120"
+                    required
+                  >
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-birthday-cake text-gray-400"></i>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-gray-700 font-medium mb-2" for="hand">
+                  Dominant Hand
+                </label>
+                <div class="relative">
+                  <select 
+                    id="hand" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition appearance-none pl-12"
+                    required
+                  >
+                    <option value="" disabled selected>Select your hand</option>
+                    <option value="Left">Left-handed</option>
+                    <option value="Right">Right-handed</option>
+                    <option value="Ambidextrous">Ambidextrous</option>
+                  </select>
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-hand-point-up text-gray-400"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-gray-700 font-medium mb-2" for="language">
+                Primary Language
+              </label>
+              <div class="relative">
+                <select 
+                  id="language" 
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition appearance-none pl-12"
+                >
+                  <option value="Bangla" selected>Bangla</option>
+                  <option value="English">English</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Arabic">Arabic</option>
+                  <option value="Other">Other</option>
+                </select>
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-language text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              type="submit" 
+              class="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg shadow-blue-200"
+            >
+              Continue to Upload <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+          </form>
+        </div>
+        
+        <!-- Step 2: Upload Section -->
+        <div id="step2" class="hidden">
+          <div class="flex items-center mb-8">
+            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold mr-3">2</div>
+            <h2 class="text-2xl font-bold text-gray-800">Upload Handwriting Sample</h2>
+          </div>
+          
+          <div class="space-y-6">
+            <div class="upload-area rounded-xl p-8 text-center cursor-pointer bg-white/50" id="dropArea">
+              <div class="max-w-md mx-auto">
+                <div class="w-20 h-20 mx-auto bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center mb-5">
+                  <i class="fas fa-cloud-upload-alt text-white text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Drag & Drop your file here</h3>
+                <p class="text-gray-600 mb-4">or</p>
+                <label for="photo" class="inline-block">
+                  <span class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-6 rounded-lg transition cursor-pointer">
+                    <i class="fas fa-folder-open mr-2"></i>Browse Files
+                  </span>
+                  <input type="file" id="photo" class="hidden" accept="image/*">
+                </label>
+                <p class="text-gray-500 text-sm mt-4">Supports JPG, PNG (Max 5MB)</p>
+              </div>
+            </div>
+            
+            <div id="previewContainer" class="hidden">
+              <h3 class="text-lg font-medium text-gray-800 mb-3">Preview</h3>
+              <div class="border border-gray-200 rounded-lg p-4 flex justify-center bg-white">
+                <img id="previewImage" class="max-h-64 rounded-lg shadow">
+              </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-4 mt-6">
+              <button 
+                id="backBtn"
+                class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-4 rounded-lg transition flex items-center justify-center"
+              >
+                <i class="fas fa-arrow-left mr-2"></i> Back
+              </button>
+              <button 
+                id="uploadBtn"
+                class="flex-1 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-medium py-3 px-4 rounded-lg transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled
+              >
+                Upload Image <i class="fas fa-upload ml-2"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 3: Success Message -->
+        <div id="step3" class="hidden">
+          <div class="text-center py-8">
+            <div class="w-24 h-24 mx-auto bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center mb-6">
+              <i class="fas fa-check text-white text-4xl"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-3">Upload Successful!</h2>
+            <p class="text-gray-600 max-w-md mx-auto mb-8">
+              Thank you for contributing to our handwriting recognition research. Your sample has been added to our collection.
+            </p>
+            
+            <div class="flex justify-center gap-4">
+              <button 
+                id="newUploadBtn"
+                class="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-medium py-2.5 px-6 rounded-lg transition"
+              >
+                <i class="fas fa-plus mr-2"></i> Add Another Sample
+              </button>
+              <button 
+                id="galleryBtn"
+                class="bg-gray-800 hover:bg-black text-white font-medium py-2.5 px-6 rounded-lg transition"
+              >
+                <i class="fas fa-images mr-2"></i> View Gallery
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Gallery Section -->
+    <div id="gallerySection" class="mt-12 hidden bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-bold text-gray-800">Handwriting Gallery</h2>
+        <button id="closeGalleryBtn" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="gallery">
+        <!-- Sample Gallery Items -->
+        <div class="card bg-white rounded-xl shadow-md overflow-hidden">
+          <div class="p-5">
+            <div class="flex items-center mb-4">
+              <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16"></div>
+              <div class="ml-4">
+                <h3 class="font-bold text-gray-800">Rahman Khan</h3>
+                <p class="text-gray-600 text-sm">Age: 32 | Hand: Right</p>
+                <p class="text-gray-600 text-sm">Language: Bangla</p>
+              </div>
+            </div>
+            <div class="bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-200 rounded-lg h-40 flex items-center justify-center">
+              <span class="text-gray-500 text-sm">Bangla Handwriting Sample</span>
+            </div>
+            <div class="flex justify-between items-center mt-4">
+              <div class="text-sm text-gray-500">
+                <i class="far fa-clock mr-1"></i> 2 days ago
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card bg-white rounded-xl shadow-md overflow-hidden">
+          <div class="p-5">
+            <div class="flex items-center mb-4">
+              <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16"></div>
+              <div class="ml-4">
+                <h3 class="font-bold text-gray-800">Priya Das</h3>
+                <p class="text-gray-600 text-sm">Age: 28 | Hand: Left</p>
+                <p class="text-gray-600 text-sm">Language: Bangla</p>
+              </div>
+            </div>
+            <div class="bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-200 rounded-lg h-40 flex items-center justify-center">
+              <span class="text-gray-500 text-sm">Bangla Handwriting Sample</span>
+            </div>
+            <div class="flex justify-between items-center mt-4">
+              <div class="text-sm text-gray-500">
+                <i class="far fa-clock mr-1"></i> 1 day ago
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card bg-white rounded-xl shadow-md overflow-hidden">
+          <div class="p-5">
+            <div class="flex items-center mb-4">
+              <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16"></div>
+              <div class="ml-4">
+                <h3 class="font-bold text-gray-800">Arif Chowdhury</h3>
+                <p class="text-gray-600 text-sm">Age: 45 | Hand: Right</p>
+                <p class="text-gray-600 text-sm">Language: Bangla</p>
+              </div>
+            </div>
+            <div class="bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-200 rounded-lg h-40 flex items-center justify-center">
+              <span class="text-gray-500 text-sm">Bangla Handwriting Sample</span>
+            </div>
+            <div class="flex justify-between items-center mt-4">
+              <div class="text-sm text-gray-500">
+                <i class="far fa-clock mr-1"></i> 3 days ago
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="mt-16 text-center text-white text-sm">
+      <p>© 2023 Bangla Handwriting Collector. All rights reserved.</p>
+      <p class="mt-2">Preserving our linguistic heritage through technology</p>
+    </footer>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // DOM Elements
+      const step1 = document.getElementById('step1');
+      const step2 = document.getElementById('step2');
+      const step3 = document.getElementById('step3');
+      const infoForm = document.getElementById('infoForm');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const backBtn = document.getElementById('backBtn');
+      const newUploadBtn = document.getElementById('newUploadBtn');
+      const galleryBtn = document.getElementById('galleryBtn');
+      const closeGalleryBtn = document.getElementById('closeGalleryBtn');
+      const gallerySection = document.getElementById('gallerySection');
+      const photoInput = document.getElementById('photo');
+      const dropArea = document.getElementById('dropArea');
+      const previewContainer = document.getElementById('previewContainer');
+      const previewImage = document.getElementById('previewImage');
+      const progressBar = document.getElementById('progressBar');
+      const gallery = document.getElementById('gallery');
+      
+      // Form submission - Step 1 to Step 2
+      infoForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Animate step transition
+        step1.classList.add('slide-out');
+        setTimeout(() => {
+          step1.classList.add('hidden');
+          step1.classList.remove('slide-out');
+          step2.classList.remove('hidden');
+          step2.classList.add('slide-in');
+          progressBar.style.width = '50%';
+        }, 500);
+      });
+      
+      // Back button - Step 2 to Step 1
+      backBtn.addEventListener('click', function() {
+        step2.classList.add('slide-out');
+        setTimeout(() => {
+          step2.classList.add('hidden');
+          step2.classList.remove('slide-out');
+          step1.classList.remove('hidden');
+          step1.classList.add('slide-in');
+          progressBar.style.width = '0%';
+        }, 500);
+      });
+      
+      // File input change
+      photoInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+          const file = this.files[0];
+          
+          // Check file type and size
+          const validTypes = ['image/jpeg', 'image/png'];
+          if (!validTypes.includes(file.type)) {
+            alert('Please upload a valid image file (JPG or PNG).');
+            return;
+          }
+          
+          if (file.size > 5 * 1024 * 1024) { // 5MB
+            alert('File size exceeds 5MB limit.');
+            return;
+          }
+          
+          // Create preview
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            previewImage.src = e.target.result;
+            previewContainer.classList.remove('hidden');
+          }
+          reader.readAsDataURL(file);
+          
+          // Enable upload button
+          uploadBtn.disabled = false;
+        }
+      });
+      
+      // Drag and drop functionality
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+      });
+      
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+      });
+      
+      function highlight() {
+        dropArea.classList.add('dragover');
+      }
+      
+      function unhighlight() {
+        dropArea.classList.remove('dragover');
+      }
+      
+      dropArea.addEventListener('drop', handleDrop, false);
+      
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        photoInput.files = files;
+        
+        if (files.length > 0) {
+          // Trigger change event for the input
+          const event = new Event('change', {
+            'bubbles': true,
+            'cancelable': true
+          });
+          photoInput.dispatchEvent(event);
+        }
+      }
+      
+      // Upload button - Step 2 to Step 3
+      uploadBtn.addEventListener('click', function() {
+        // Simulate upload progress
+        progressBar.style.width = '100%';
+        
+        // Get form values
+        const name = document.getElementById('name').value;
+        const age = document.getElementById('age').value;
+        const hand = document.getElementById('hand').value;
+        const language = document.getElementById('language').value;
+        
+        // Create gallery item
+        const galleryItem = document.createElement('div');
+        galleryItem.className = 'card bg-white rounded-xl shadow-md overflow-hidden fade-in';
+        galleryItem.innerHTML = `
+          <div class="p-5">
+            <div class="flex items-center mb-4">
+              <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16"></div>
+              <div class="ml-4">
+                <h3 class="font-bold text-gray-800">${name}</h3>
+                <p class="text-gray-600 text-sm">Age: ${age} | Hand: ${hand}</p>
+                <p class="text-gray-600 text-sm">Language: ${language}</p>
+              </div>
+            </div>
+            <div class="bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-200 rounded-lg h-40 flex items-center justify-center">
+              <img src="${previewImage.src}" alt="Handwriting sample" class="max-h-full max-w-full p-2">
+            </div>
+            <div class="flex justify-between items-center mt-4">
+              <div class="text-sm text-gray-500">
+                <i class="far fa-clock mr-1"></i> Just now
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Add to gallery
+        gallery.prepend(galleryItem);
+        
+        // Show success message after delay
+        setTimeout(() => {
+          step2.classList.add('slide-out');
+          setTimeout(() => {
+            step2.classList.add('hidden');
+            step2.classList.remove('slide-out');
+            step3.classList.remove('hidden');
+            step3.classList.add('fade-in');
+          }, 500);
+        }, 1000);
+      });
+      
+      // New Upload button
+      newUploadBtn.addEventListener('click', function() {
+        step3.classList.add('hidden');
+        step2.classList.remove('hidden');
+        step2.classList.add('fade-in');
+        photoInput.value = '';
+        previewContainer.classList.add('hidden');
+        uploadBtn.disabled = true;
+        progressBar.style.width = '50%';
+      });
+      
+      // Gallery buttons
+      galleryBtn.addEventListener('click', function() {
+        step3.classList.add('hidden');
+        gallerySection.classList.remove('hidden');
+        gallerySection.classList.add('fade-in');
+      });
+      
+      closeGalleryBtn.addEventListener('click', function() {
+        gallerySection.classList.add('hidden');
+        step3.classList.remove('hidden');
+        step3.classList.add('fade-in');
+      });
+    });
+  </script>
+</body>
 </html>
